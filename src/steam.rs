@@ -200,21 +200,10 @@ impl SteamClient {
 
                         match reader.lines().last() {
                             Some(Ok(line)) => {
-                                if line.contains("Verification complete") {
-                                    if let Some(device) = create_device() {
-                                        match client.patch(device.get_patches()) {
-                                            Ok(_) => println!("Steam patched"),
-                                            Err(_) => eprintln!("Couldn't patch Steam"),
-                                        }
-                                    }
-                                }
-
-                                if line.contains("Shutdown") {
-                                    if let Some(device) = create_device() {
-                                        match client.unpatch(device.get_patches()) {
-                                            Ok(_) => println!("Steam unpatched"),
-                                            Err(_) => eprintln!("Couldn't unpatch Steam"),
-                                        }
+                                if let Some(device) = create_device() {
+                                    match client.patch(device.get_patches()) {
+                                        Ok(_) => println!("Steam patched"),
+                                        Err(_) => eprintln!("Couldn't patch Steam"),
                                     }
                                 }
                             }
