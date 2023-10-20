@@ -195,31 +195,34 @@ impl SteamClient {
             loop {
                 if let Ok(events) = inotify.read_events_blocking(&mut buffer) {
                     for _ in events {
-                        let file = File::open(Self::get_log_path().unwrap()).unwrap();
-                        let reader = BufReader::new(file);
+                        match File::open(Self::get_log_path().unwrap()) {
+                            Ok(file) => {
+                                let reader = BufReader::new(file);
+                                match reader.lines().last() {
+                                    Some(Ok(line)) => {
+                                        if line.contains("Verification complete") {
+                                            if let Some(device) = create_device() {
+                                                match client.patch(device.get_patches()) {
+                                                    Ok(_) => println!("Steam patched"),
+                                                    Err(_) => eprintln!("Couldn't patch Steam"),
+                                                }
+                                            }
+                                        }
 
-                        match reader.lines().last() {
-                            Some(Ok(line)) => {
-                                if line.contains("Verification complete") {
-                                    if let Some(device) = create_device() {
-                                        match client.patch(device.get_patches()) {
-                                            Ok(_) => println!("Steam patched"),
-                                            Err(_) => eprintln!("Couldn't patch Steam"),
+                                        if line.contains("Shutdown") {
+                                            if let Some(device) = create_device() {
+                                                match client.unpatch(device.get_patches()) {
+                                                    Ok(_) => println!("Steam unpatched"),
+                                                    Err(_) => eprintln!("Couldn't unpatch Steam"),
+                                                }
+                                            }
                                         }
                                     }
-                                }
-
-                                if line.contains("Shutdown") {
-                                    if let Some(device) = create_device() {
-                                        match client.unpatch(device.get_patches()) {
-                                            Ok(_) => println!("Steam unpatched"),
-                                            Err(_) => eprintln!("Couldn't unpatch Steam"),
-                                        }
-                                    }
+                                    Some(Err(err)) => println!("Error reading line: {}", err),
+                                    None => println!("The file is empty"),
                                 }
                             }
-                            Some(Err(err)) => println!("Error reading line: {}", err),
-                            None => println!("The file is empty"),
+                            Err(_) => continue,
                         }
                     }
                 }
